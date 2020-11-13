@@ -1,0 +1,33 @@
+{
+  "name": "assignment280ajax",
+  "version": "1.0.0",
+  "main": "app.js",
+  "dependencies": {
+    "body-parser": "^1.8.4",
+    "errorhandler": "*",
+    "express": "^4.8.8",
+    "express-session": "^1.17.1",
+    "jade": "1.6.*",
+    "method-override": "^3.0.0",
+    "morgan": "^1.3.2",
+    "multer": "0.1.*",
+    "mysql": "^2.18.1",
+    "serve-favicon": "^2.5.0",
+    "socket.io": "1.1.*"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sinnanje/nodehello.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sinnanje/nodehello/issues"
+  },
+  "homepage": "https://github.com/sinnanje/nodehello#readme",
+  "description": ""
+}

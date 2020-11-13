@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+    <title>Health Camp SPA</title>
+    <style>
+        .div-all {
+            border: solid  rgb(63,63,63);
+            border-width: 2px;
+            border-radius: 10px;
+            position: absolute;
+            margin: auto;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            width:900px;
+            height: fit-content;
+        }
+
+
+        ul {
+            list-style-type: none;
+            margin:0;
+            padding: 0;
+            overflow: hidden;
+            background-color:rgb(14,47,77);
+        }
+
+        li {
+            float: left;
+        }
+
+        li a {
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        .spanli{
+            display: block;
+            color: white;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+        }
+
+        li a:hover {
+            background-color:rgb(155,196,248);
+        }
+
+        .active {
+            background-color:rgb(14,47,77);
+        }
+
+        .button{
+            border-radius: 0px;
+            width:150px;
+            background-color: rgb(0,141,20);
+            height:40px;
+        }
+
+        #myData {
+            font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #myData td, #myData th {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        #myData tr:nth-child(even){background-color: #AFCAEC;}
+
+        #myData tr:nth-child(odd){background-color: #D5E6FE;}
+
+        #myData tr:hover {background-color: #ddd;}
+
+        #myData th {
+            padding-top: 12px;
+            padding-bottom: 12px;
+            text-align: left;
+            background-color:rgb(96,150,201);
+            color: white;
+        }
+
+        #parent {
+            width: 220px;
+            overflow: hidden; /* will contain if #first is longer than #second */
+            margin-bottom: 10px;
+            
+        }
+        #my_camera {
+            width: 80px;
+            float:left;
+            margin-right: 10px;
+            border: blue solid 3px;
+            background-color: blue;
+        }
+        #show_saved_img {
+            overflow: hidden; 
+            width:100px;
+        }
+
+        label {
+            display: inline-block;
+            width: 100px;
+            text-align: right;
+        }​
+
+    </style>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/webcamjs/1.0.25/webcam.min.js"></script>
+
+    <script>
+        var db = openDatabase('testdb', '1.0', 'Test DB', 2 * 1024 * 1024);
+
+        function readVitals() {
+            db.transaction(function (tx) {
+                tx.executeSql('SELECT * FROM vitals', [], function (tx, results) {
+                    var len = results.rows.length, i;
+                    for (i = 0; i < len; i++) {
+                        alert(results.rows.item(i).height);
+                    }
+                });
+            })
+         }
+
+         function readUser() {
+            db.transaction(function (tx) {
+                tx.executeSql('SELECT * FROM patient', [], function (tx, results) {
+                    var len = results.rows.length, i;
+                    for (i = 0; i < len; i++) {
+                        alert(results.rows.item(i).firstname);
+                    }
+                });
+            })
+         }
+
+         function handleVitals() {
+             var patientid = document.getElementById("patientidvitals").value;
+             var height = document.getElementById("height").value;
+             var weight = document.getElementById("weight").value;
+             var temperature = document.getElementById("temperature").value;
+             var pulse = document.getElementById("pulse").value;
+             var bp = document.getElementById("bp").value;
+             var medications = document.getElementById("medications").value;
+             var notes = document.getElementById("notes").value;
+
+
+             db.transaction(function (tx) {
+                tx.executeSql('CREATE TABLE IF NOT EXISTS vitals (patientid,height,weight FLOAT,temperature FLOAT,pulse INTEGER,bp,medications,notes)');
+                tx.executeSql('INSERT INTO vitals (patientid,height,weight,temperature,pulse,bp,medications,notes) VALUES (?,?, ?,?,?,?,?,?)', [patientid,height,weight,temperature,pulse,bp,medications,notes]);
+            })
+             
+         }
+
+         function handleUser() {
+             var patientid = document.getElementById("patientid").value;
+             var firstname = document.getElementById("firstname").value;
+             var lastname = document.getElementById("lastname").value;
+             var e = document.getElementById("gender");
+             var gender = e.value;
+             var age = document.getElementById("age").value;
+             var other = document.getElementById("other").value;
+             var photo = document.getElementById("hiddenVar").getAttribute("myAttr");
+
+             /*if(navigator.onLine){
+                 alert("connected to internet");
+             } else {
+                 alert("offline");
+             }*/
+
+             db.transaction(function (tx) {
+                console.log("come inside");
+                tx.executeSql('CREATE TABLE IF NOT EXISTS patient (patientid,firstname,lastname,gender,age,other,photo)');
+                tx.executeSql('INSERT INTO patient (patientid,firstname,lastname,gender,age,other,photo) VALUES (?,?,?,?,?,?,?)', [patientid,firstname,lastname,gender,age,other,photo]);
+             })      
+         }
+
+        $(document).ready(function(){
+
+            $("#demolink").click(function() {
+                $("#vitals").css("display","none");
+                $("#reportsdiv").css("display","none");
+                $("#patient").css("display","block");
+            });  
+
+            $("#vitalslink").click(function() {
+                $("#vitals").css("display","table");
+                $("#reportsdiv").css("display","none");
+                $("#patient").css("display","none");
+            }); 
+
+            Webcam.set({
+                width: 100,
+                height: 80,
+                image_format: 'jpeg',
+                jpeg_quality: 120
+            });
+            Webcam.attach('#my_camera');
+
+            $('#syncdemo').click(function() {
+                var patientData = [];
+                var patients = {};
+                db.transaction(function (tx) {
+                    tx.executeSql('SELECT * FROM patient', [], function (tx, results) {
+                        var len = results.rows.length, i;
+                        console.log("length:" + len);
+                            for (i = 0; i < len; i++) {
+                                console.log("patientid: " + results.rows.item(i).patientid);
+                                patientData.push({ 
+                                    "patientid" : results.rows.item(i).patientid,
+                                    "firstname"  : results.rows.item(i).firstname,
+                                    "lastname"       : results.rows.item(i).lastname,
+                                    "gender"       : results.rows.item(i).gender,
+                                    "age"       : results.rows.item(i).age,
+                                    "other"       : results.rows.item(i).other,
+                                    "photo" : results.rows.item(i).photo
+                            });
+                        }
+
+                        patients.patientData = patientData;
+                        $.ajax({
+                            type: 'POST',
+                            data:JSON.stringify(patientData),
+                            contentType: "application/json; charset=utf-8",
+                            url: '/syncdemo',
+                            success: function(data){
+                                db.transaction(function(tx){
+                                    tx.executeSql('DELETE FROM patient');
+                                });
+
+                                alert("Patient details synced successfully");
+                                    
+                            },
+                            error: function(jqXHR, textStatus, errorThrown){
+                                alert('error: ' + textStatus + ': ' + errorThrown);
+                            }
+                        });
+                    });
+                });
+
+                
+            
+                    return false;//suppress natural form submission
+                }); 
+
+            
+            $('#syncvitals').click(function() {
+                var vitalData = [];
+                var vitals = {};
+                db.transaction(function (tx) {
+                    tx.executeSql('SELECT * FROM vitals', [], function (tx, results) {
+                        var len = results.rows.length, i;
+                        console.log("length:" + len);
+                            for (i = 0; i < len; i++) {
+                                console.log("patientid: " + results.rows.item(i).patientid);
+                                vitalData.push({ 
+                                    "patientid" : results.rows.item(i).patientid,
+                                    "height"  : results.rows.item(i).height,
+                                    "weight"       : results.rows.item(i).weight,
+                                    "temperature"       : results.rows.item(i).temperature,
+                                    "pulse"       : results.rows.item(i).pulse,
+                                    "bp"       : results.rows.item(i).bp,
+                                    "medications"       : results.rows.item(i).medications,
+                                    "notes"       : results.rows.item(i).notes
+                            });
+                        }
+
+                        vitals.vitalData = vitalData;
+                       // console.log("vitalData: " + vitals);
+                        $.ajax({
+                            type: 'POST',
+                            data:JSON.stringify(vitalData),
+                            contentType: "application/json; charset=utf-8",
+                            url: '/syncvitals',
+                            success: function(data){
+                                console.log("success call");
+                                db.transaction(function(tx){
+                                    tx.executeSql('DELETE FROM vitals');
+                                });
+                                alert("Vital details synced successfully");
+                                    
+                            },
+                            error: function(jqXHR, textStatus, errorThrown){
+                                alert('error: ' + textStatus + ': ' + errorThrown);
+                            }
+                        });
+                    });
+                });
+
+                
+            
+                    return false;//suppress natural form submission
+                }); 
+
+            $('#reportlink').click(function() {
+                $("#vitals").css("display","none");
+                $("#patient").css("display","none");
+                //$("#demo2").css("display","none");
+                $("#reportsdiv").css("display","block");
+                $("#myData").empty();
+                $.ajax({
+                type: 'GET',
+                dataType:'json',
+                url: '/report',
+
+                    success: function(data){ 
+                        console.log("data gotten: " + data);
+                        var row1 = $("<thead><th colspan='6'>Patients Details </th></thead>");
+                            $("#myData").append(row1);
+                            
+                            var row2 = $("<thead><tr><td style='font-weight:bold;'>Name</td><td style='font-weight:bold;'>Age</td><td style='font-weight:bold;'>Gender</td><td style='font-weight:bold;'>Photo</td><td style='font-weight:bold;'>Medications</td><td style='font-weight:bold;'>Notes</td></tr></thead>");
+                            $("#myData").append(row2);
+                        $.each(data, function( index,value ) {
+                            
+                            var image_uri = value.photo;
+
+                            if(image_uri == null || image_uri == undefined) {
+                                var img_photo = "Not found"; 
+                            } else {
+                                var img_photo = "<img src=' " +  image_uri + " '/>"; 
+                            }
+
+                            var notes = value.notes;
+
+                            if(notes==null || notes == undefined){
+                                notes = "";
+                            }
+
+                            var age = value.age;
+
+                            if(age == null || age == undefined){
+                                age = "";
+                            }
+
+                            var medications = value.medications;
+
+                            if(medications== null || medications == undefined){
+                                medications = "";
+                            }
+                            
+                            var row = $("<tr><td>" + value.firstname + "</td><td>" + value.age + "</td><td>" + value.gender + "</td><td>" + img_photo + "</td><td>" + medications + "</td><td>" + notes + "</td></tr>" );
+                            $("#myData").append(row);
+                        });
+                        
+                    },
+                    error: function(jqXHR, textStatus, errorThrown){
+                        alert('error: ' + textStatus + ': ' + errorThrown);
+                    }
+                });
+            
+                return false; //suppress natural form submission
+                }); 
+
+        });
+
+    </script>   
+    
+</head>
+<body>
+    <script>
+        function take_snapshot() {
+            Webcam.snap( function(data_uri) {
+            $(".image-tag").val(data_uri);
+                document.getElementById('show_saved_img').innerHTML = '<img src="'+data_uri+'"/>';
+                document.getElementById("hiddenVar").setAttribute("myAttr",data_uri);
+            });
+        }
+    </script>
+   
+    <div class="div-all"> 
+        <ul>
+            <li><span class="spanli">Health Camp SPA</span></li>
+            <li style="float:right"><a class="active" href="#" id="syncvitals">Sync Vitals</a></li> 
+            <li style="float:right"><a class="active" href="#" id="syncdemo">Sync Patient</a></li> 
+            <li style="float:right"><a class="active" href="#" id="reportlink">Reports</a></li>
+            <li style="float:right"><a class="active" href="#" id="vitalslink">Health Vitals</a></li>
+            <li style="float:right"><a class="active" href="#" id="demolink">Demographics</a></li> 
+        </ul>
+        
+        <div id="patient">
+            <form id="submit" onsubmit="return handleUser()" style="margin-top: 40px;margin-left: 50px;">
+                <div style="display:table-row;height:fit-content;">
+
+                    <div style="display:table-cell; width:62%;  border-right: 8px solid rgb(112,159,204);vertical-align: middle;">
+                        <label for="patientid">Patient Id:</label>
+                <input type="text" name="patientid" id="patientid" required><br><br>
+                
+                <label for="firstname">First Name:</label>
+                <input type="text" name="firstname" id="firstname" required><br><br>
+                    
+                <label for="lastname">Last Name:</label>
+                <input type="text" name="lastname" id="lastname"><br><br>
+
+                <label for="gender">Gender:</label>
+
+                <select name="gender" id="gender" style="width: 60px;">
+                <option value="M">M</option>
+                <option value="F">F</option>
+                </select><br><br>
+                    
+                <label for="age">Age:</label>
+                <input type="text" name="age" id="age" required><br><br>
+
+                <label for="other">Notes:</label>
+                <input type="text" name="other" id="other"><br><br>
+
+                    </div>
+                    <div style="display:table-cell;padding-left: 30px;vertical-align: middle;">
+                        <label>Photo:</label>
+                <div id="parent">
+                    <div id="my_camera"></div>
+                    <!-- show captured image -->
+                    <div id="show_saved_img"></div>
+                    <input type="hidden" id="hiddenVar"/>
+                </div>  
+                <button class="button" id="capture_btn" onclick="take_snapshot()" type="button">Capture</button>
+                <input type="hidden" name="image" class="image-tag">
+                        </div>
+
+                </div>
+                <div style="padding-top:50px;margin-bottom: 50px;text-align: center;">
+                    <input type="submit" value="Save" id="savedemo" class="button">
+                </div>
+
+            </form>
+
+        </div>
+
+        <div id="vitals" style="display: none;">
+            <form id="submit" onsubmit="return handleVitals()" style="margin-top: 40px;margin-left: 50px;">
+               
+                <div style="display:table-row;height:fit-content;">
+                    <div style="display:table-cell;width:60%; border-right: thick solid rgb(112,159,204);vertical-align: middle;">
+                        <label for="patientidvitals">Patient Id:</label>
+                            <input type="text" name="patientidvitals" id="patientidvitals" required><br><br>
+
+                        <label for="height">Height:</label>
+                            <input type="text" name="height" id="height"><br><br>
+                                    
+                        <label for="weight">Weight:</label>
+                        <input type="text" name="weight" id="weight"><br><br>
+                                    
+                        <label for="temperature">Temperature:</label>
+                        <input type="text" name="temperature" id="temperature"><br><br>
+                                    
+                        <label for="pulse">Pulse Rate:</label>
+                        <input type="text" name="pulse" id="pulse"><br><br>
+                                        
+                        <label for="bp">BP:</label>
+                        <input type="text" name="bp" id="bp"><br><br>
+                    
+                    </div>
+                    <div style="display:table-cell;padding-left: 30px;vertical-align: middle;">
+                        <label for="medications">Medications:</label>
+                        <textarea id="medications" name="medications"
+                                      rows="8" cols="30" style="overflow:hidden" required></textarea><br><br>
+                        <label for="notes">Notes:</label>
+                        <textarea id="notes" name="notes"
+                                      rows="8" cols="30" style="overflow:hidden"></textarea>
+                    </div>
+                </div>
+                <div style="padding-top:50px;margin-bottom: 50px;text-align: center;"><input type="submit" value="Save" id="savevitals" class="button"></div>
+                
+            </form>
+        </div>
+        <div id="reportsdiv" style="display: none;margin: 50px;height:300px;overflow:auto;">
+            <table id="myData">
+                
+            </table>
+        </div>
+    </div>
+</body>
+</html>
